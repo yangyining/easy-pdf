@@ -1,0 +1,9 @@
+bin/
+tests/
+wiki/
+
+*.tar
+textpdf*.jar
+/target/
+*.iml
+/.idea/
