@@ -1,10 +1,8 @@
-# 转换文本文件为PDF
+# 根据xml配置将文本转换为PDF
 
 给定一个 XML 模板文件，然后通过 Json 提供模板数据，整合后生成 PDF 文档。
 
 这个项目可以用于需要动态生成 PDF 的场景，例如试卷、合同，等等。
-
-> 本项目使用`ZXing`来生成二维码，ZXing 需要 JDK 1.7 以上版本，如果这是一个问题，并且你的项目不需要二维码功能，将 ZXing 部分代码屏蔽即可在 JDK 1.6 中运行。
 
 ## XML 模板
 
@@ -32,7 +30,7 @@ TextPDF 的 XML 模板侧重于描述排版效果，例如'字体大小'，'粗�
     <para>可以通过<span font-style="bold">span元素来嵌套文字风格，</span>这样可以在一个段落中出现多种风格。</para>
 </textpdf>
 ```
-TextPDF 的模板只支持简单的排版格式（[查看模板说明](http://git.oschina.net/lucky-byte/textpdf/wikis/Template)）。
+TextPDF 的模板只支持简单的排版格式（[查看模板说明](./doc/Template.md)）。
 
 ### 转换 .doc 文件
 
@@ -92,7 +90,7 @@ Options:
 
 ```java
 
-import com.lucky_byte.pdf.TextPDF;
+import com.janeluo.easypdf.TextPDF;
 
 try {
     File xmlfile = new File("path/to/xmlfile");
@@ -102,8 +100,7 @@ try {
 } catch (Exception ex) {
     ex.printStackTrace();
 }
+
 ```
 
-> 从 0.3 开始，`TextPDF.gen`方法被废弃(因为其不能提供额外的选项)，应该直接使用 TextParser 对象，请参考`TextPDF.java`中的`main`函数。
-
-除了能够生成 PDF 文档外，TextPDF 也可以生成 HTML 文件(用于编辑)，以及将 .doc 文件转换为 XML 模板，使用方法请参考 [API 说明](http://git.oschina.net/lucky-byte/textpdf/wikis/API)。
+除了能够生成 PDF 文档外，TextPDF 也可以生成 HTML 文件(用于编辑)，以及将 .doc 文件转换为 XML 模板，使用方法请参考 [API 说明](./doc/API.md)。
