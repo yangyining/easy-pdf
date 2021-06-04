@@ -104,3 +104,5 @@ try {
 ```
 
 除了能够生成 PDF 文档外，TextPDF 也可以生成 HTML 文件(用于编辑)，以及将 .doc 文件转换为 XML 模板，使用方法请参考 [API 说明](./doc/API.md)。
+
+代码fork自 [https://gitee.com/lucky-byte/textpdf](https://gitee.com/lucky-byte/textpdf) ,在此基础上升级到itext7
