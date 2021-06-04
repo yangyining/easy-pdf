@@ -11,6 +11,8 @@ package com.janeluo.easypdf;
 
 import com.alibaba.fastjson.JSONObject;
 import com.itextpdf.kernel.geom.PageSize;
+import com.janeluo.easypdf.enums.DocType;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
@@ -25,8 +27,11 @@ import java.util.Stack;
 
 /**
  * 解析 XML 模板，并生成 PDF 文件
+ *
+ * @author janeluo
  */
-class TextParserDocHandler extends DefaultHandler {
+@Slf4j
+public class TextParserDocHandler extends DefaultHandler {
     public static final String[] BLOCK_ELEMENTS = {
             "title", "chapter", "section", "para",
             "pagebreak", "table"
@@ -40,8 +45,7 @@ class TextParserDocHandler extends DefaultHandler {
     private JSONObject jsonData;
     private TextTable table = null;
 
-    public TextParserDocHandler(TextParser parser, int docType)
-            throws IOException {
+    public TextParserDocHandler(TextParser parser, DocType docType) throws IOException {
         chunkList = new ArrayList<>();
         chunk_stack = new Stack<>();
         contents_builder = new StringBuilder();
@@ -49,11 +53,11 @@ class TextParserDocHandler extends DefaultHandler {
         this.parser = parser;
 
         switch (docType) {
-            case TextParser.DOC_TYPE_PDF:
+            case DPF:
                 textDoc = new PDFDoc(parser.outStream);
                 break;
 
-            case TextParser.DOC_TYPE_HTML:
+            case HTML:
                 textDoc = new HTMLDoc(parser.outStream);
                 HTMLDoc textDoc = (HTMLDoc) this.textDoc;
                 textDoc.setLinkPaths(parser.cssPaths, parser.jsPaths);
@@ -65,6 +69,7 @@ class TextParserDocHandler extends DefaultHandler {
                 }
                 break;
             default:
+                log.error("Document type unsupported.");
                 throw new IOException("Document type unsupported.");
         }
 
@@ -78,6 +83,9 @@ class TextParserDocHandler extends DefaultHandler {
      */
     @Override
     public void startDocument() throws SAXException {
+        if (log.isDebugEnabled()) {
+            log.debug("解析文件开始");
+        }
         try {
             if (parser.jsonStream != null) {
                 final String jsonStr = IOUtils.toString(parser.jsonStream, StandardCharsets.UTF_8);
@@ -86,12 +94,20 @@ class TextParserDocHandler extends DefaultHandler {
 
                 if (textDoc instanceof PDFDoc) {
                     if (!jsonObject.containsKey("data")) {
-                        System.err.println(
-                                "JSON source missing 'data' key, please check!");
+                        if (log.isErrorEnabled()) {
+                            log.error("JSON source missing 'data' key, please check!");
+                        } else {
+                            System.err.println(
+                                    "JSON source missing 'data' key, please check!");
+                        }
                     } else {
                         Object value = jsonObject.get("data");
                         if (!(value instanceof JSONObject)) {
-                            System.err.println("JSON 'data' must be a object.");
+                            if (log.isErrorEnabled()) {
+                                log.error("JSON 'data' must be a object.");
+                            } else {
+                                System.err.println("JSON 'data' must be a object.");
+                            }
                         } else {
                             jsonData = (JSONObject) value;
                         }
@@ -147,7 +163,12 @@ class TextParserDocHandler extends DefaultHandler {
         if (value != null) {
             String[] array = value.split(",");
             if (array.length < 4) {
-                System.err.println("Page margin format error.");
+
+                if (log.isErrorEnabled()) {
+                    log.error("Page margin format error.");
+                } else {
+                    System.err.println("Page margin format error.");
+                }
             } else {
                 try {
                     textDoc.setPageMargin(
@@ -156,7 +177,11 @@ class TextParserDocHandler extends DefaultHandler {
                             Integer.parseInt(array[2].trim()),
                             Integer.parseInt(array[3].trim()));
                 } catch (Exception ex) {
-                    System.err.println("Page margin format error.");
+                    if (log.isErrorEnabled()) {
+                        log.error("Page margin format error.");
+                    } else {
+                        System.err.println("Page margin format error.");
+                    }
                 }
             }
         }
@@ -246,18 +271,34 @@ class TextParserDocHandler extends DefaultHandler {
 
             String id = attrs.getValue("id");
             if (id == null) {
-                System.err.println("Value element missing 'id' attribute.");
+
+                if (log.isErrorEnabled()) {
+                    log.error("Value element missing 'id' attribute.");
+                } else {
+                    System.err.println("Value element missing 'id' attribute.");
+                }
             } else {
                 if (textDoc instanceof PDFDoc) {
                     if (jsonData != null) {
                         if (!jsonData.containsKey(id)) {
-                            System.err.println("JSON data key '" + id
-                                    + "' not found!");
+                            if (log.isErrorEnabled()) {
+                                log.error("JSON data key '" + id
+                                        + "' not found!");
+                            } else {
+                                System.err.println("JSON data key '" + id
+                                        + "' not found!");
+                            }
+
                         } else {
                             Object value = jsonData.get(id);
                             if (!(value instanceof String)) {
-                                System.err.println("JSON  data key '" + id
-                                        + "' must has a string value.");
+                                if (log.isErrorEnabled()) {
+                                    log.error("JSON  data key '" + id
+                                            + "' must has a string value.");
+                                } else {
+                                    System.err.println("JSON  data key '" + id
+                                            + "' must has a string value.");
+                                }
                             } else {
                                 contents_builder.append(value);
                                 if (attrs.getValue("font-style") == null) {
@@ -271,7 +312,11 @@ class TextParserDocHandler extends DefaultHandler {
         } else if ("hspace".equalsIgnoreCase(qName)) {
             String value = attrs.getValue("size");
             if (value == null || value.length() == 0) {
-                System.err.println("hspace need a size attribute.");
+                if (log.isErrorEnabled()) {
+                    log.error("hspace need a size attribute.");
+                } else {
+                    System.err.println("hspace need a size attribute.");
+                }
             } else {
                 try {
                     int size = Integer.parseInt(value);
@@ -279,7 +324,11 @@ class TextParserDocHandler extends DefaultHandler {
                         contents_builder.append(' ');
                     }
                 } catch (Exception ex) {
-                    System.err.println("size attribute need a integer value");
+                    if (log.isErrorEnabled()) {
+                        log.error("size attribute need a integer value", ex);
+                    } else {
+                        System.err.println("size attribute need a integer value");
+                    }
                 }
             }
         }

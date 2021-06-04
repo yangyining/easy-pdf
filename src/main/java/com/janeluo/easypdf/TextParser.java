@@ -8,6 +8,8 @@
  */
 package com.janeluo.easypdf;
 
+import com.janeluo.easypdf.enums.DocType;
+
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.*;
@@ -22,10 +24,8 @@ import java.util.*;
  * 版本 0.2 增加生成 HTML 的能力，主要的原因是 XSL 用起来太恼火
  */
 public class TextParser {
-    static final public int DOC_TYPE_PDF = 1;
-    static final public int DOC_TYPE_HTML = 2;
 
-   protected InputStream inputStream;
+   protected InputStream xmlStream;
    protected InputStream jsonStream;
    protected OutputStream outStream;
    protected List<String> cssPaths;
@@ -37,7 +37,7 @@ public class TextParser {
 
     public TextParser(InputStream xmlStream, InputStream inputStream,
                       OutputStream outputStream) {
-        this.inputStream = xmlStream;
+        this.xmlStream = xmlStream;
         this.jsonStream = inputStream;
         this.outStream = outputStream;
         cssPaths = new ArrayList<>();
@@ -123,25 +123,25 @@ public class TextParser {
     /**
      * 解析 XML 模板并生成输出文档
      */
-    public void gen(int docType) throws Exception {
+    public void gen(DocType docType) throws Exception {
         SAXParserFactory factory = SAXParserFactory.newInstance();
         factory.setNamespaceAware(false);
         SAXParser parser = factory.newSAXParser();
-        parser.parse(inputStream, new TextParserDocHandler(this, docType));
+        parser.parse(xmlStream, new TextParserDocHandler(this, docType));
     }
 
     /**
      * 解析 XML 模板并生成 PDF 文档
      */
     public void genPdf() throws Exception {
-        gen(DOC_TYPE_PDF);
+        gen(DocType.DPF);
     }
 
     /**
      * 解析 XML 模板并生成 HTML 文档
      */
     public void genHtml() throws Exception {
-        gen(DOC_TYPE_HTML);
+        gen(DocType.HTML);
     }
 }
 
