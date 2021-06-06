@@ -3,7 +3,8 @@
     <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">//表示输出到控制台
         <Target>System.out</Target>
         <encoder>
-            <pattern>%highlight(%-5level) %d{HH:mm:ss.SSS} %m %n</pattern>
+<!--            <pattern>%highlight(%-5level) %d{HH:mm:ss.SSS} %m %n</pattern>-->
+            <pattern>%d{HH:mm:ss.SSS} |-%highlight(%-5level) in %logger{50} - %msg%n</pattern>
         </encoder>
     </appender>
 

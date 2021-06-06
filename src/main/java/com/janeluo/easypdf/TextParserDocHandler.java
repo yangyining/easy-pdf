@@ -37,24 +37,42 @@ public class TextParserDocHandler extends DefaultHandler {
             "pagebreak", "table"
     };
 
+
+    // 页面大小常数定义
+    private final Object[][] pageSizeMap = {
+            {"a0", PageSize.A0}, {"a1", PageSize.A1},
+            {"a2", PageSize.A2}, {"a3", PageSize.A3},
+            {"a4", PageSize.A4}, {"a5", PageSize.A5},
+            {"a6", PageSize.A6}, {"a7", PageSize.A7},
+            {"a8", PageSize.A8}, {"a9", PageSize.A9},
+            {"a10", PageSize.A10},
+
+            {"b0", PageSize.B0}, {"b1", PageSize.B1},
+            {"b2", PageSize.B2}, {"b3", PageSize.B3},
+            {"b4", PageSize.B4}, {"b5", PageSize.B5},
+            {"b6", PageSize.B6}, {"b7", PageSize.B7},
+            {"b8", PageSize.B8}, {"b9", PageSize.B9},
+            {"b10", PageSize.B10},
+    };
+
     private final TextParser parser;
     private final TextDoc textDoc;
     private final List<TextChunk> chunkList;
-    private final Stack<TextChunk> chunk_stack;
-    private final StringBuilder contents_builder;
+    private final Stack<TextChunk> chunkStack;
+    private final StringBuilder contentsBuilder;
     private JSONObject jsonData;
     private TextTable table = null;
 
     public TextParserDocHandler(TextParser parser, DocType docType) throws IOException {
         chunkList = new ArrayList<>();
-        chunk_stack = new Stack<>();
-        contents_builder = new StringBuilder();
+        chunkStack = new Stack<>();
+        contentsBuilder = new StringBuilder();
 
         this.parser = parser;
 
         switch (docType) {
             case DPF:
-                textDoc = new PDFDoc(parser.outStream);
+                textDoc = new PDFDoc(parser.templateStream, parser.outStream);
                 break;
 
             case HTML:
@@ -73,8 +91,8 @@ public class TextParserDocHandler extends DefaultHandler {
                 throw new IOException("Document type unsupported.");
         }
 
-        if (parser.outEncoding != null) {
-            textDoc.setEncoding(parser.outEncoding);
+        if (parser.outputEncoding != null) {
+            textDoc.setEncoding(parser.outputEncoding);
         }
     }
 
@@ -129,22 +147,6 @@ public class TextParserDocHandler extends DefaultHandler {
     public void endDocument() {
     }
 
-    // 页面大小常数定义
-    private final Object[][] pageSizeMap = {
-            {"a0", PageSize.A0}, {"a1", PageSize.A1},
-            {"a2", PageSize.A2}, {"a3", PageSize.A3},
-            {"a4", PageSize.A4}, {"a5", PageSize.A5},
-            {"a6", PageSize.A6}, {"a7", PageSize.A7},
-            {"a8", PageSize.A8}, {"a9", PageSize.A9},
-            {"a10", PageSize.A10},
-
-            {"b0", PageSize.B0}, {"b1", PageSize.B1},
-            {"b2", PageSize.B2}, {"b3", PageSize.B3},
-            {"b4", PageSize.B4}, {"b5", PageSize.B5},
-            {"b6", PageSize.B6}, {"b7", PageSize.B7},
-            {"b8", PageSize.B8}, {"b9", PageSize.B9},
-            {"b10", PageSize.B10},
-    };
 
     private void setupPage(Attributes attrs) {
         // 页面大小
@@ -194,6 +196,7 @@ public class TextParserDocHandler extends DefaultHandler {
     public void startElement(String namespaceUri,
                              String localName, String qName, Attributes attrs)
             throws SAXException {
+        log.info(">>>>>> start qName:[{}]", qName);
         TextChunk prevChunk = null;
 
         if ("textpdf".equalsIgnoreCase(qName)) {
@@ -231,7 +234,7 @@ public class TextParserDocHandler extends DefaultHandler {
             TextChunk chunk = new TextChunk();
             chunk.addAttrs(attrs);
             table.addCell(chunk);
-            contents_builder.setLength(0);
+            contentsBuilder.setLength(0);
             return;
         }
 
@@ -250,11 +253,11 @@ public class TextParserDocHandler extends DefaultHandler {
         }
 
         try {
-            prevChunk = chunk_stack.peek();
-            String contents = contents_builder.toString();
+            prevChunk = chunkStack.peek();
+            String contents = contentsBuilder.toString();
             if (contents.length() > 0) {
                 prevChunk.setContents(contents);
-                contents_builder.setLength(0);
+                contentsBuilder.setLength(0);
                 chunkList.add(prevChunk.clone());
             }
         } catch (EmptyStackException ignored) {
@@ -300,7 +303,7 @@ public class TextParserDocHandler extends DefaultHandler {
                                             + "' must has a string value.");
                                 }
                             } else {
-                                contents_builder.append(value);
+                                contentsBuilder.append(value);
                                 if (attrs.getValue("font-style") == null) {
                                     chunk.addAttr("font-style", "bold,underline");
                                 }
@@ -321,7 +324,7 @@ public class TextParserDocHandler extends DefaultHandler {
                 try {
                     int size = Integer.parseInt(value);
                     for (int i = 0; i < size; i++) {
-                        contents_builder.append(' ');
+                        contentsBuilder.append(' ');
                     }
                 } catch (Exception ex) {
                     if (log.isErrorEnabled()) {
@@ -332,7 +335,7 @@ public class TextParserDocHandler extends DefaultHandler {
                 }
             }
         }
-        chunk_stack.push(chunk);
+        chunkStack.push(chunk);
     }
 
     /**
@@ -341,7 +344,7 @@ public class TextParserDocHandler extends DefaultHandler {
     @Override
     public void characters(char[] ch, int start, int length) {
         String contents = new String(ch, start, length);
-        contents_builder.append(
+        contentsBuilder.append(
                 contents.replaceAll("\\s*\n+\\s*", "").trim());
     }
 
@@ -351,6 +354,7 @@ public class TextParserDocHandler extends DefaultHandler {
     @Override
     public void endElement(String namespaceUri,
                            String localName, String qName) throws SAXException {
+        log.info(">>>>>> end qName:[{}]", qName);
         if ("textpdf".equalsIgnoreCase(qName)) {
             textDoc.close();
             return;
@@ -360,13 +364,13 @@ public class TextParserDocHandler extends DefaultHandler {
             return;
         }
         if ("break".equalsIgnoreCase(qName)) {
-            contents_builder.append("\n");
+            contentsBuilder.append("\n");
             return;
         }
 
         if ("cell".equalsIgnoreCase(qName)) {
             TextChunk chunk = table.lastCell();
-            chunk.setContents(contents_builder.toString());
+            chunk.setContents(contentsBuilder.toString());
         }
         if ("table".equalsIgnoreCase(qName)) {
             if (table.getCells().size() > 0) {
@@ -376,26 +380,26 @@ public class TextParserDocHandler extends DefaultHandler {
                     throw new SAXException(e);
                 }
             }
-            contents_builder.setLength(0);
+            contentsBuilder.setLength(0);
             table = null;
             return;
         }
 
         TextChunk chunk = null;
         try {
-            chunk = chunk_stack.pop();
+            chunk = chunkStack.pop();
         } catch (Exception ignored) {
         }
 
         if (chunk == null) {
             return;
         }
-        String contents = contents_builder.toString();
+        String contents = contentsBuilder.toString();
         if (contents.length() > 0 ||
                 "value".equalsIgnoreCase(qName) ||
                 "hspace".equalsIgnoreCase(qName)) {
             chunk.setContents(contents);
-            contents_builder.setLength(0);
+            contentsBuilder.setLength(0);
             chunkList.add(chunk.clone());
         }
 

@@ -8,6 +8,7 @@
  */
 package com.janeluo.easypdf;
 
+import com.itextpdf.kernel.pdf.PdfReader;
 import com.janeluo.easypdf.draw.CustomLineSeparator;
 import com.itextpdf.io.font.PdfEncodings;
 import com.itextpdf.io.image.ImageDataFactory;
@@ -26,6 +27,7 @@ import com.itextpdf.layout.splitting.ISplitCharacters;
 import org.xml.sax.Attributes;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,6 +45,7 @@ public class PDFDoc extends TextDoc {
     public final static int FONT_FAMILY_HEI = 1;
     public final static int FONT_FAMILY_SONG = 2;
 
+    protected InputStream templateInputStream;
 
     private final Map<String, BlockType> blockTypes = new HashMap<String, BlockType>() {{
         put("title", BlockType.BLOCK_TITLE);
@@ -59,8 +62,9 @@ public class PDFDoc extends TextDoc {
 
     private final ISplitCharacters splitCharacters = (glyphLine, i) -> true;
 
-    public PDFDoc(OutputStream outputStream) {
+    public PDFDoc(InputStream templateInputStream, OutputStream outputStream) {
         super(outputStream);
+        this.templateInputStream = templateInputStream;
 
         pdfBlockDefaults = new ArrayList<>();
         images = new HashMap<>();
@@ -95,7 +99,14 @@ public class PDFDoc extends TextDoc {
     public boolean open() {
         try {
             final PdfWriter writer = new PdfWriter(outputStream);
-            pdfDocument = new PdfDocument(writer);
+
+            // 有模板
+            if (this.templateInputStream != null) {
+                pdfDocument = new PdfDocument(new PdfReader(templateInputStream), writer);
+            } else {
+                pdfDocument = new PdfDocument(writer);
+            }
+
             this.document = new Document(pdfDocument);
             document.setMargins(pageMarginTop, pageMarginRight, pageMarginBottom, pageMarginLeft);
             // writer.setFullCompression();	// 需求 PDF 1.5
@@ -417,7 +428,6 @@ public class PDFDoc extends TextDoc {
             }
         }
         chunk.setText(contents);
-//        chunk.append(contents);
         try {
             setChunkFont(text_chunk, chunk, blockDefault);
         } catch (IOException ignored) {
@@ -426,9 +436,9 @@ public class PDFDoc extends TextDoc {
         return chunk;
     }
 
-    private void formatParagraph(Paragraph para, List<TextChunk> chunk_list) {
+    private void formatParagraph(Paragraph para, List<TextChunk> chunkList) {
         // 用第一个节点来设置块的段落属性
-        TextChunk text_chunk = chunk_list.get(0);
+        TextChunk text_chunk = chunkList.get(0);
         if (text_chunk != null) {
             Map<String, String> attrs = text_chunk.getAttrs();
 

@@ -203,7 +203,7 @@ public class TextPDF {
                 parser.setJsLinks(js_paths.split(","));
             }
 
-            if (out_format.equalsIgnoreCase("pdf")) {
+            if ("pdf".equalsIgnoreCase(out_format)) {
                 parser.genPdf();
             } else {
                 parser.genHtml();

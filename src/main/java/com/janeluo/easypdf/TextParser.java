@@ -9,6 +9,7 @@
 package com.janeluo.easypdf;
 
 import com.janeluo.easypdf.enums.DocType;
+import lombok.Data;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -23,17 +24,31 @@ import java.util.*;
  * <p>
  * 版本 0.2 增加生成 HTML 的能力，主要的原因是 XSL 用起来太恼火
  */
+@Data
 public class TextParser {
 
-   protected InputStream xmlStream;
-   protected InputStream jsonStream;
-   protected OutputStream outStream;
-   protected List<String> cssPaths;
-   protected List<String> jsPaths;
-   protected String outEncoding = null;
-   protected String htmlDeclare = null;
-   protected String htmlExtra = null;
-   protected int typeInput = HTMLDoc.TYPE_INPUT;
+    /**
+     * 模板输入流
+     */
+    protected InputStream templateStream;
+    /**
+     * xml输入流
+     */
+    protected InputStream xmlStream;
+    /**
+     * json数据输入流
+     */
+    protected InputStream jsonStream;
+    /**
+     * 导出文件输出流
+     */
+    protected OutputStream outStream;
+    protected List<String> cssPaths;
+    protected List<String> jsPaths;
+    protected String outputEncoding = null;
+    protected String htmlDeclare = null;
+    protected String htmlExtra = null;
+    protected int typeInput = HTMLDoc.TYPE_INPUT;
 
     public TextParser(InputStream xmlStream, InputStream inputStream,
                       OutputStream outputStream) {
@@ -84,41 +99,6 @@ public class TextParser {
         }
     }
 
-    /**
-     * 设置 html 输出的文件编码
-     *
-     * @param encoding 编码
-     */
-    public void setOutputEncoding(String encoding) {
-        this.outEncoding = encoding;
-    }
-
-    /**
-     * 设置 html 文件的声明，默认为 <!DOCTYPE html>
-     *
-     * @param declare 内容
-     */
-    public void setHtmlDeclare(String declare) {
-        this.htmlDeclare = declare;
-    }
-
-    /**
-     * 增加一段内容到 html 的 body 结尾处
-     *
-     * @param extra 内容
-     */
-    public void setHtmlExtra(String extra) {
-        this.htmlExtra = extra;
-    }
-
-    /**
-     * 设置 HTML 输出类型
-     *
-     * @param type 类型
-     */
-    public void setHtmlType(int type) {
-        this.typeInput = type;
-    }
 
     /**
      * 解析 XML 模板并生成输出文档
